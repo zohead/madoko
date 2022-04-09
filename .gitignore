@@ -15,14 +15,6 @@ out2/
 support/madoko-local/test
 styles/csl
 styles/locales
-web/client/version.json
-web/client/versionlog.json
-web/client/madoko.appcache
-web/client/lib/
-web/client/private/
-web/client/styles/
-web/client/templates/
-web/client/dictionaries/
 web/users/
 web/ssl/
 web/log*/

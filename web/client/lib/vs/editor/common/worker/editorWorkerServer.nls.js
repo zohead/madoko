@@ -1,0 +1,4 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+define("vs/editor/common/worker/editorWorkerServer.nls",[],{vs_base_common_severity:["Error","Warning","Info"],vs_editor_common_model_textModelWithTokens:["The mode has failed while tokenizing the input."],vs_base_common_json:["Invalid symbol","Invalid number format","Property name expected","Value expected","Colon expected","Value expected","Comma expected","Value expected","Closing brace expected","Value expected","Comma expected","Value expected","Closing bracket expected","Value expected","End of content expected"],vs_platform_configuration_common_configurationRegistry:["User specific settings","Workspace settings","Default settings"]});
