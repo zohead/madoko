@@ -9,9 +9,14 @@
 // Passprases
 // -------------------------------------------------------------
 
+var httpsOnly = true;
+
 var passphraseSSL = process.argv[2];
 if (!passphraseSSL) {
-  throw new Error("Need to supply passphrase(s) as an argument.");
+  if (httpsOnly)
+    throw new Error("Need to supply passphrase(s) as an argument.");
+  else
+    passphraseSSL = (Math.random() + 1).toString(36).substr(2);
 }
 
 var passphraseLocal   = passphraseSSL + (process.argv[3] || "local");
@@ -205,7 +210,7 @@ setInterval( function() {
 
 function initSession(req,res) {
   // check if we encrypt cookies: need to patch cookie-session or 'encrypted' flag is ignored
-  if (!req.sessionEncryptionKeys) {
+  if (httpsOnly && !req.sessionEncryptionKeys) {
     throw new Error("Session cookies are not encrypted!");
   }
 
@@ -296,7 +301,7 @@ app.use(function(req, res, next) {
 
 app.use(bodyParser.urlencoded({limit: limits.fileSize, extended: true}));
 app.use(bodyParser.json({limit: limits.fileSize, strict: false }));
-app.use(cookieSession({ name: "session", secret: passphraseSession, encrypted: true, maxage: limits.cookieAge, httpOnly: true, secure: true, signed: false, overwrite: true }));
+app.use(cookieSession({ name: "session", secret: passphraseSession, encrypted: true, maxage: limits.cookieAge, httpOnly: true, secure: httpsOnly, signed: false, overwrite: true }));
 
 app.use(function(err, req, res, next){
   if (!err) return next();
@@ -365,7 +370,7 @@ app.use(function(req,res,next) {
   // check if any non-GET call originated from an XHR request (to prevent most CSRF attacks)
   if (req.method !== "GET" && req.path !== "/rest/report/csp") {
     console.log(req.method + " " + req.url);
-    if (!req.xhr || !req.secure) {
+    if (!req.xhr || (httpsOnly && !req.secure)) {
       throw { httpCode: 401, message: "XHR header not set, or connection is not secure\n  " + req.path };
     }
   }
@@ -853,7 +858,12 @@ function userDecrypt(req,data) {
   }
 }
 
-var remotes = JSON.parse(fs.readFileSync("./remotes.json",{encoding:"utf8"}));
+var remotes;
+try {
+  remotes = JSON.parse(fs.readFileSync("./remotes.json",{encoding:"utf8"}));
+} catch (e) {
+  remotes = {};
+}
 remotes.sources = [];
 properties(remotes).forEach( function(name) {
   var remote = remotes[name];
@@ -1616,37 +1626,44 @@ app.use(function(err, req, res, next){
 // Start listening on https
 // -------------------------------------------------------------
 
-var sslOptions = {
-  pfx: fs.readFileSync('./ssl/madoko.cloudapp.net.pfx'),
-  passphrase: passphraseSSL, // fs.readFileSync('./ssl/madoko-cloudapp-net.txt'),
-  //key: fs.readFileSync('./ssl/madoko-server.key'),
-  //cert: fs.readFileSync('./ssl/madoko-server.crt'),
-  //ca: fs.readFileSync('./ssl/daan-ca.crt'),
-  //requestCert: true,
-  //rejectUnauthorized: false
-};
-https.createServer(sslOptions, app).listen(443);
 console.log("listening...");
 
+var sslOptions;
+try {
+  sslOptions= {
+    pfx: fs.readFileSync('./ssl/madoko.cloudapp.net.pfx'),
+    passphrase: passphraseSSL, // fs.readFileSync('./ssl/madoko-cloudapp-net.txt'),
+    //key: fs.readFileSync('./ssl/madoko-server.key'),
+    //cert: fs.readFileSync('./ssl/madoko-server.crt'),
+    //ca: fs.readFileSync('./ssl/daan-ca.crt'),
+    //requestCert: true,
+    //rejectUnauthorized: false
+  };
+  https.createServer(sslOptions, app).listen(443);
+} catch (e) {
+}
 
 // -------------------------------------------------------------
 // Set up http redirection
 // -------------------------------------------------------------
 
-var httpApp = express();
+if (sslOptions && httpsOnly) {
+  var httpApp = express();
 
-httpApp.use(function(req, res, next) {
-  logRequest(req,"http-redirection");
-  // don't allow queries
-  if (req.url.indexOf("?") >= 0) {
-    res.status(403).send("Can only serve through secure connections.");
-  }
-  else {
-    res.redirect("https://" + (req.hostname || req.host) + req.path);
-  }
-});
+  httpApp.use(function(req, res, next) {
+    logRequest(req,"http-redirection");
+    // don't allow queries
+    if (req.url.indexOf("?") >= 0) {
+      res.status(403).send("Can only serve through secure connections.");
+    } else {
+      res.redirect("https://" + (req.hostname || req.host) + req.path);
+    }
+  });
 
-http.createServer(httpApp).listen(80);
+  http.createServer(httpApp).listen(80);
+} else {
+  http.createServer(app).listen(80);
+}
 
 
 // -------------------------------------------------------------
