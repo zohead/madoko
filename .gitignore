@@ -6,7 +6,6 @@ syntax:glob
 contrib/
 doc/*.pdf
 doc/*.html
-lib/
 libnet/
 libdoc/
 node_modules/
