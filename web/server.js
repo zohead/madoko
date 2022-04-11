@@ -218,11 +218,16 @@ function initSession(req,res) {
   if (!req.session) req.session = {};
   if (!req.session.userid) {
     console.log("create guest userid")
-    req.session.userid = uniqueHash();
+    if (req.secure)
+      req.session.userid = uniqueHash();
+    else
+      req.session.userid = req.ip;
     req.session.created = (new Date()).toISOString();
     var domain = domainsGet(req);
-    if (domain.newUsers > limits.requestNewUser) throw { httpCode: 429, message: "too many requests for new users from this domain" };
-    domain.newUsers++;
+    if (limits.requestNewUser >= 0) {
+      if (domain.newUsers > limits.requestNewUser) throw { httpCode: 429, message: "too many requests for new users from this domain" };
+      domain.newUsers++;
+    }
   }
   if (!req.session.logins) req.session.logins = {};
   var today = new Date().toDateString();
@@ -592,7 +597,7 @@ setInterval( function() {
 // Get a unique user path for this session.
 function getUser( req ) {  // : { id: string, requests: int, path: string }
   var requests = usersGetRequests(req.session.userid);
-  if (requests >= limits.requestsPerUser) throw { httpCode: 429, message: "too many requests from this user" } ;
+  if (limits.requestsPerUser >= 0 && requests >= limits.requestsPerUser) throw { httpCode: 429, message: "too many requests from this user" } ;
 
   return {
     id: req.session.userid,
@@ -784,7 +789,7 @@ function readFiles( userpath, docname, target, out ) {
 
 // execute madoko program
 function madokoExec( userpath, docname, flags, timeout ) {
-  var command = /* "madoko */ "node ../../client/lib/cli.js " + flags + " " + stdflags + " \""  + docname + "\"";
+  var command = "madoko "/*node ../../client/lib/cli.js "*/ + flags + " " + stdflags + " \""  + docname + "\"";
   return new Promise( function(cont) {
     console.log("> " + command);
     cp.exec( command, {cwd: userpath, timeout: timeout || 10000, maxBuffer: 512*1024 }, cont);
