@@ -23,8 +23,6 @@ var Sandbox = require("./sandbox.js");
 var Run     = require("./run.js");
 var App     = require("./app.js");
 
-var localHostIP = "127.0.0.1";
-
 // -------------------------------------------------------------
 // Parse command line and initialize the configuration options
 // -------------------------------------------------------------
@@ -57,7 +55,7 @@ app.use(function(req, res, next){
   }
 
   // extra check: only serve to local host
-  if (req.ip !== req.connection.remoteAddress || req.ip !== localHostIP) {
+  if (req.ip !== req.connection.remoteAddress || (req.ip !== '127.0.0.1' && req.ip !== '::1')) {
     throw new Util.HttpError( "only serving localhost", 403 );
   }
 

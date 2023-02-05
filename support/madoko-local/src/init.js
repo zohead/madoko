@@ -99,9 +99,10 @@ Options.on("--help", function() {
 
 function initializeConfig() {
   Options.parse(process.argv);
+  var CmdOptions = Options.opts()
 
   // Home dir
-  if (Options.homedir) config.homedir = Options.homedir;
+  if (CmdOptions.homedir) config.homedir = CmdOptions.homedir;
   config.configdir = Util.combine(config.homedir, ".madoko");
   config.logdir = Util.combine(config.configdir,"log");
 
@@ -109,11 +110,11 @@ function initializeConfig() {
   var configFile  = Path.join(config.configdir,"config.json");
   var localConfig = Util.jsonParse(Util.readFileSync(configFile, {encoding:"utf8"}, "{}" ));
 
-  if (typeof Options.secret === "string") {
+  if (typeof CmdOptions.secret === "string") {
     // use provided secret
-    config.secret = Options.secret;
+    config.secret = CmdOptions.secret;
   }
-  else if (typeof localConfig.secret === "string" && Options.secret !== true) {
+  else if (typeof localConfig.secret === "string" && CmdOptions.secret !== true) {
     config.secret = localConfig.secret;
   }
   else {
@@ -126,14 +127,14 @@ function initializeConfig() {
   }
 
   // Port
-  if (Options.port) config.port = Options.port;
+  if (CmdOptions.port) config.port = CmdOptions.port;
   else if (typeof localConfig.port === "number") config.port = localConfig.port;
 
   // Concurrency
-  if (Options.concurrency) config.concurrency = Options.concurrency;
+  if (CmdOptions.concurrency) config.concurrency = CmdOptions.concurrency;
 
   // Origin
-  if (Options.origin) config.origin = Options.origin;
+  if (CmdOptions.origin) config.origin = CmdOptions.origin;
   else if (typeof localConfig.origin === "string") config.origin = localConfig.origin;
 
   // User
@@ -144,37 +145,36 @@ function initializeConfig() {
   else config.userid = config.username;
 
   // Run
-  if (Options.run) {
-    if (typeof Options.runcmd === "string")
-      config.run = Options.runcmd;
+  if (CmdOptions.run) {
+    if (typeof CmdOptions.runcmd === "string")
+      config.run = CmdOptions.runcmd;
     else
       config.run = "madoko";
 
-    if (typeof Options.runflags === "string") {
-      config.runflags = Options.runflags;
+    if (typeof CmdOptions.runflags === "string") {
+      config.runflags = CmdOptions.runflags;
     }
 
-    if (typeof Options.rmdelay === "number" && Options.rmdelay >= 1) {
-      config.rmdirDelay = Options.rmdelay * second;
+    if (typeof CmdOptions.rmdelay === "number" && CmdOptions.rmdelay >= 1) {
+      config.rmdirDelay = CmdOptions.rmdelay * second;
       console.log("rmdir delay: " + config.rmdirDelay.toString());
     }
   }
 
-
   // Verbose
-  if (Options.verbose === true) {
+  if (CmdOptions.verbose === true) {
     config.verbose = 1;
   }
-  else if (typeof Options.verbose === "number") {
-    config.verbose = Options.verbose;
+  else if (typeof CmdOptions.verbose === "number") {
+    config.verbose = CmdOptions.verbose;
   }
 
   // Verify local directory
-  if (Options.args && Options.args.length===1) {
-    config.mountdir = Options.args[0];
+  if (CmdOptions.args && CmdOptions.args.length===1) {
+    config.mountdir = CmdOptions.args[0];
     config.writebackDir = true;
   }
-  else if (!Options.args || Options.args.length === 0) {
+  else if (!CmdOptions.args || CmdOptions.args.length === 0) {
     if (typeof localConfig.mountdir === "string") config.mountdir = localConfig.mountdir;
     else {
       config.mountdir = process.cwd();
@@ -195,8 +195,8 @@ function initializeConfig() {
   }
 
   // Create rundir
-  if (typeof Options.rundir==="string") {
-    config.rundir = Options.rundir;
+  if (typeof CmdOptions.rundir==="string") {
+    config.rundir = CmdOptions.rundir;
   }
   else {
     config.rundir = config.configdir;
@@ -208,7 +208,7 @@ function initializeConfig() {
   Log.setLog( config.verbose, config.logdir, config.limits.logFlush );
 
   // Launch
-  config.launch = Options.launch;
+  config.launch = CmdOptions.launch;
   return config;
 }
 
